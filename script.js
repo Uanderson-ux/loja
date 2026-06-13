@@ -54,17 +54,70 @@ document.addEventListener('DOMContentLoaded', () => {
         fadeObserver.observe(card);
     });
     
-    // Load custom products on start
-    loadCustomProducts();
+    // Load grid state on start
+    loadGridState();
 });
 
-// --- Modal and Custom Products Logic ---
+// --- Modal, Edit and State Logic ---
+let currentEditingCard = null;
+
+function saveGridState() {
+    const cards = Array.from(document.querySelectorAll('.product-card:not(.add-product-card)'));
+    const htmlToSave = cards.map(c => c.outerHTML).join('\n');
+    localStorage.setItem('storeGridState', htmlToSave);
+}
+
+function loadGridState() {
+    const saved = localStorage.getItem('storeGridState');
+    if (saved) {
+        const addCard = document.querySelector('.add-product-card');
+        document.querySelectorAll('.product-card:not(.add-product-card)').forEach(c => c.remove());
+        addCard.insertAdjacentHTML('beforebegin', saved);
+    }
+}
+
 function openAddModal() {
     document.getElementById('addProductModal').style.display = 'flex';
 }
 
 function closeAddModal() {
     document.getElementById('addProductModal').style.display = 'none';
+    document.querySelector('.modal-header h2').innerText = "Adicionar Novo Produto";
+    document.getElementById('addProductForm').reset();
+    currentEditingCard = null;
+}
+
+function editProduct(btn, event) {
+    event.stopPropagation();
+    const card = btn.closest('.product-card');
+    currentEditingCard = card;
+
+    const name = card.querySelector('h3').innerText;
+    const priceRaw = card.querySelector('.price').innerText;
+    const price = priceRaw.replace('R$ ', '');
+    const buyBtn = card.querySelector('.btn-buy');
+    
+    const onclickStr = buyBtn.getAttribute('onclick');
+    let link = "";
+    if (onclickStr) {
+        const match = onclickStr.match(/'([^']+)'/);
+        if (match) link = match[1];
+    }
+    
+    const cardImg = card.querySelector('.card-image');
+    const styleImg = cardImg.style.backgroundImage;
+    let image = "";
+    if (styleImg && styleImg.includes('url(')) {
+        image = styleImg.replace('url("', '').replace('")', '').replace("url('", '').replace("')", '');
+    }
+
+    document.getElementById('prodName').value = name;
+    document.getElementById('prodPrice').value = price;
+    document.getElementById('prodLink').value = link;
+    document.getElementById('prodImage').value = image.startsWith('http') || image.startsWith('assets') || image.startsWith('file') ? image : "";
+    
+    document.querySelector('.modal-header h2').innerText = "Editar Produto";
+    openAddModal();
 }
 
 function handleAddProduct(event) {
@@ -77,22 +130,24 @@ function handleAddProduct(event) {
     const imageFile = document.getElementById('prodImageFile').files[0];
     
     const finalizeProduct = (finalImage) => {
-        const product = {
-            name: name,
-            price: price,
-            link: link,
-            image: finalImage,
-            id: Date.now()
-        };
-        
-        try {
-            saveProduct(product);
-            renderProduct(product);
+        if (currentEditingCard) {
+            currentEditingCard.querySelector('h3').innerText = name;
+            currentEditingCard.querySelector('.price').innerText = `R$ ${price}`;
+            currentEditingCard.querySelector('.btn-buy').setAttribute('onclick', `window.location.href='${link}'`);
+            
+            if (finalImage && finalImage.trim() !== '') {
+                currentEditingCard.querySelector('.card-image').style.backgroundImage = `url('${finalImage}')`;
+                currentEditingCard.querySelector('.card-image').style.backgroundColor = '#1e1e2f';
+            }
+            
+            saveGridState();
             closeAddModal();
-            event.target.reset();
-        } catch (e) {
-            alert("Erro ao salvar: a imagem escolhida é muito pesada para ficar salva no navegador. Tente uma imagem mais leve (abaixo de 2MB) ou use a opção de Link da Imagem.");
+            return;
         }
+
+        renderNewProduct(name, price, link, finalImage);
+        saveGridState();
+        closeAddModal();
     };
 
     if (imageFile) {
@@ -106,41 +161,29 @@ function handleAddProduct(event) {
     }
 }
 
-function saveProduct(product) {
-    let products = JSON.parse(localStorage.getItem('customProducts')) || [];
-    products.push(product);
-    localStorage.setItem('customProducts', JSON.stringify(products));
-}
-
-function loadCustomProducts() {
-    let products = JSON.parse(localStorage.getItem('customProducts')) || [];
-    products.forEach(product => renderProduct(product));
-}
-
-function renderProduct(product) {
+function renderNewProduct(name, price, link, image) {
     const addCard = document.querySelector('.add-product-card');
     
-    // Use the provided image link, or fallback to a default gradient
-    const imageStyle = product.image && product.image.trim() !== '' 
-        ? `background-image: url('${product.image}'); background-color: #1e1e2f;` 
+    const imageStyle = image && image.trim() !== '' 
+        ? `background-image: url('${image}'); background-color: #1e1e2f; background-size: cover; background-position: center;` 
         : `background: linear-gradient(135deg, #1e1e2f, #4c2b82);`;
     
     const cardHTML = `
-        <div class="product-card">
+        <div class="product-card" style="position: relative;">
+            <button class="edit-btn" title="Editar Produto" onclick="editProduct(this, event)">⋮</button>
             <div class="card-image" style="${imageStyle}"></div>
             <div class="card-content">
                 <span class="badge highlight">Novo</span>
-                <h3>${product.name}</h3>
+                <h3>${name}</h3>
                 <p>Produto adicionado manualmente.</p>
                 <div class="price-row">
-                    <span class="price">R$ ${product.price}</span>
-                    <button class="btn-buy" onclick="window.location.href='${product.link}'">Acessar</button>
+                    <span class="price">R$ ${price}</span>
+                    <button class="btn-buy" onclick="window.location.href='${link}'">Acessar</button>
                 </div>
             </div>
         </div>
     `;
     
-    // Insert before the add button
     if(addCard) {
         addCard.insertAdjacentHTML('beforebegin', cardHTML);
     }
