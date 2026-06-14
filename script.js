@@ -68,9 +68,14 @@ function saveGridState() {
 }
 
 function loadGridState() {
+    const addCard = document.querySelector('.add-product-card');
+    
+    // Se o cartão de adicionar não existir (versão pública), ignoramos a memória
+    // para não apagar a vitrine original e quebrar o script.
+    if (!addCard) return;
+
     const saved = localStorage.getItem('storeGridState');
     if (saved) {
-        const addCard = document.querySelector('.add-product-card');
         document.querySelectorAll('.product-card:not(.add-product-card)').forEach(c => c.remove());
         addCard.insertAdjacentHTML('beforebegin', saved);
     }
