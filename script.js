@@ -56,22 +56,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Load grid state on start
     loadGridState();
-
-    // Environment Check to Hide Admin Tools on Hosted Environments
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '';
-    if (!isLocalhost) {
-        const style = document.createElement('style');
-        style.innerHTML = `
-            .edit-btn { display: none !important; }
-            .add-product-card { display: none !important; }
-        `;
-        document.head.appendChild(style);
-        
-        const saveBtn = document.querySelector('button[onclick="exportHTML()"]');
-        if (saveBtn && saveBtn.parentElement) {
-            saveBtn.parentElement.style.display = 'none';
-        }
-    }
 });
 
 // --- Modal, Edit and State Logic ---
@@ -218,6 +202,25 @@ function exportHTML() {
         card.style.transition = '';
     });
     
+    // ----------------------------------------------------
+    // REMOVE ADMIN TOOLS FROM THE EXPORTED HTML
+    // ----------------------------------------------------
+    // Remove edit buttons
+    docClone.querySelectorAll('.edit-btn').forEach(btn => btn.remove());
+    
+    // Remove "Adicionar Produto" card
+    const addCard = docClone.querySelector('.add-product-card');
+    if (addCard) addCard.remove();
+    
+    // Remove "Salvar Loja" button and its parent li
+    const saveBtn = docClone.querySelector('button[onclick="exportHTML()"]');
+    if (saveBtn && saveBtn.parentElement) saveBtn.parentElement.remove();
+    
+    // Remove the modal
+    const addModal = docClone.getElementById('addProductModal');
+    if (addModal) addModal.remove();
+    // ----------------------------------------------------
+
     // Get the HTML string
     const htmlContent = "<!DOCTYPE html>\n" + docClone.documentElement.outerHTML;
     
@@ -229,11 +232,11 @@ function exportHTML() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'index.html';
+    a.download = 'index-publico.html'; // Changed name to avoid overwriting the local editor file
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
-    alert("✅ Arquivo 'index.html' gerado com sucesso!\\n\\nAgora vá na pasta onde o arquivo foi baixado (pasta Downloads) e SUBSTITUA o arquivo 'index.html' antigo da sua loja por este novo.\\n\\nIsso fará com que seus novos produtos fiquem salvos permanentemente e visíveis para todos.");
+    alert("✅ Arquivo 'index-publico.html' gerado com sucesso!\\n\\nIMPORTANTE: Esse arquivo é a versão LIMPA da sua loja (sem os botões de edição).\\nPara atualizar sua loja na internet, envie esse arquivo 'index-publico.html' para o GitHub e renomeie-o para 'index.html' lá.\\n\\nNÃO substitua o seu 'index.html' original do seu computador, pois você precisará dele para adicionar mais produtos no futuro!");
 }
