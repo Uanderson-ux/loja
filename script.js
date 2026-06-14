@@ -232,11 +232,11 @@ function exportHTML() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'index-publico.html'; // Changed name to avoid overwriting the local editor file
+    a.download = 'index.html'; // Generate the clean public file
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
-    alert("✅ Arquivo 'index-publico.html' gerado com sucesso!\\n\\nIMPORTANTE: Esse arquivo é a versão LIMPA da sua loja (sem os botões de edição).\\nPara atualizar sua loja na internet, envie esse arquivo 'index-publico.html' para o GitHub e renomeie-o para 'index.html' lá.\\n\\nNÃO substitua o seu 'index.html' original do seu computador, pois você precisará dele para adicionar mais produtos no futuro!");
+    alert("✅ Arquivo 'index.html' gerado com sucesso!\\n\\nEste é o arquivo LIMPO da sua vitrine.\\nBasta arrastar/copiar esse novo 'index.html' para a pasta do seu projeto e enviá-lo para o GitHub.\\n\\nLembre-se: Para continuar editando a loja, abra sempre o arquivo 'admin.html' no seu computador!");
 }
