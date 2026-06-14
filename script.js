@@ -56,6 +56,22 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Load grid state on start
     loadGridState();
+
+    // Environment Check to Hide Admin Tools on Hosted Environments
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '';
+    if (!isLocalhost) {
+        const style = document.createElement('style');
+        style.innerHTML = `
+            .edit-btn { display: none !important; }
+            .add-product-card { display: none !important; }
+        `;
+        document.head.appendChild(style);
+        
+        const saveBtn = document.querySelector('button[onclick="exportHTML()"]');
+        if (saveBtn && saveBtn.parentElement) {
+            saveBtn.parentElement.style.display = 'none';
+        }
+    }
 });
 
 // --- Modal, Edit and State Logic ---
@@ -187,4 +203,37 @@ function renderNewProduct(name, price, link, image) {
     if(addCard) {
         addCard.insertAdjacentHTML('beforebegin', cardHTML);
     }
+}
+
+// Export logic to make changes permanent
+function exportHTML() {
+    // Create a clone of the document to clean it up before exporting
+    const docClone = document.cloneNode(true);
+    
+    // Remove inline styles added by the scroll animation so they animate again on reload
+    const cards = docClone.querySelectorAll('.product-card');
+    cards.forEach(card => {
+        card.style.opacity = '';
+        card.style.transform = '';
+        card.style.transition = '';
+    });
+    
+    // Get the HTML string
+    const htmlContent = "<!DOCTYPE html>\n" + docClone.documentElement.outerHTML;
+    
+    // Clear localStorage so the next load uses the hardcoded HTML without duplicating
+    localStorage.removeItem('storeGridState');
+    
+    // Create download link
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'index.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    alert("✅ Arquivo 'index.html' gerado com sucesso!\\n\\nAgora vá na pasta onde o arquivo foi baixado (pasta Downloads) e SUBSTITUA o arquivo 'index.html' antigo da sua loja por este novo.\\n\\nIsso fará com que seus novos produtos fiquem salvos permanentemente e visíveis para todos.");
 }
